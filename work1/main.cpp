@@ -125,53 +125,50 @@ private:
     const std::function<double(double, double)> expected_fun;
 };
 
-//auto test_fun = [](double x, double y) {
-//    return 0.5 * x * x + y * y - y - 0.5 * x * y + 0.25;
-//};
-//auto test_fun_d = [](double x , double y) { return 3; };
-
-//auto test_fun = [](double x, double y) { return pow(x, 6) + pow(y, 6); };
-//auto test_fun_d = [](double x, double y) { return 30 * pow(x, 4) + 30 * pow(y, 4); };
-
-//auto test_fun = [](double x, double y) { return sin(x) + sin(y); };
-//auto test_fun_d = [](double x, double y) { return -sin(x) - sin(y); };
-
-//auto test_fun = [](double x, double y) { return 1 / sin(x + y + 0.1); };
-//auto test_fun_d = [](double x, double y) { return (1 + pow(cos(x + y + 0.1), 2)) / pow(sin(x + y + 0.1), 3); };
-
-#define THREADS_NUM 4
+#define THREADS_NUM 4 // change number of threads
+#define RUNS 5
 
 void test_different_net_sizes() {
     omp_set_num_threads(THREADS_NUM);
-    FILE *fp = freopen("results2.txt", "w", stdout); // change
-    auto test_fun = [](double x, double y) { return 1 / sin(x + y + 0.1); };
-    auto test_fun_d = [](double x, double y) { return 2 * (1 + pow(cos(x + y + 0.1), 2)) / pow(sin(x + y + 0.1), 3); };
+    FILE *fp = freopen("results0.txt", "w", stdout); // change output file
+    auto test_fun = [](double x, double y) { return sqrt(x) + 2 * y; };
+    auto test_fun_d = [](double x, double y) { return -1 / (4 * x * sqrt(x)); };
     std::vector<int> test_net_sizes{10, 20, 50, 100, 200, 300, 400, 500, 600, 800, 1000};
-//    for (int i = 500; i <= 5000; i += 500) {
-//        test_net_sizes.push_back(i);
-//    }
+    for (int i = 1500; i <= 3000; i += 500) {
+        test_net_sizes.push_back(i);
+    }
     for (auto it: test_net_sizes) {
         NetSolver net(it, 32, 1e-3, test_fun, test_fun_d);
 
-        auto start_time = omp_get_wtime();
-        net.calculate_approximation();
-        auto end_time = omp_get_wtime();
+        double mean_time = 0;
+        for (int j = 0; j < RUNS; j++) {
+            auto start_time = omp_get_wtime();
+            net.calculate_approximation();
+            auto end_time = omp_get_wtime();
+            mean_time += (end_time - start_time);
+        }
 
-        std::cout << std::fixed << std::setprecision(6) << it << ' ' << (end_time - start_time) << '\n';
+        std::cout << std::fixed << std::setprecision(6) << it << ' ' << mean_time / RUNS << '\n';
     }
     fclose(fp);
 }
 
 void test_different_epsilons() {
     omp_set_num_threads(THREADS_NUM);
-    FILE *fp = freopen("results.txt", "w", stdout);
-    auto test_fun = [](double x, double y) { return 1 / sin(x + y + 0.1); };
-    auto test_fun_d = [](double x, double y) { return 2 * (1 + pow(cos(x + y + 0.1), 2)) / pow(sin(x + y + 0.1), 3); };
-    double step = 1e-5;
-    for (double eps = step; eps <= 0.01; eps += step) {
-        NetSolver net(100, 32, eps, test_fun, test_fun_d);
+    FILE *fp = freopen("results0.txt", "w", stdout);
+    auto test_fun = [](double x, double y) { return sqrt(x) + 2 * y; };
+    auto test_fun_d = [](double x, double y) { return -1 / (4 * x * sqrt(x)); };
+    std::vector<double> test_eps;
+    for (double i = 1e-6; i <= 1e-3; i += 1e-5) {
+        test_eps.emplace_back(i);
+    }
+    for (double i = 1e-3; i <= 1e-2; i += 1e-3) {
+        test_eps.emplace_back(i);
+    }
+    for (auto it: test_eps) {
+        NetSolver net(200, 32, it, test_fun, test_fun_d);
         net.calculate_approximation();
-        std::cout << std::fixed << std::setprecision(6) << eps << ' ' << net.calculate_approximate_error() << '\n';
+        std::cout << std::fixed << std::setprecision(6) << it << ' ' << net.calculate_approximate_error() << '\n';
     }
     fclose(fp);
 }
@@ -179,3 +176,22 @@ void test_different_epsilons() {
 int main() {
     test_different_epsilons();
 }
+
+// functions
+//
+//auto test_fun = [](double x, double y) {
+//    return 0.5 * x * x + y * y - y - 0.5 * x * y + 0.25;
+//};
+//auto test_fun_d = [](double x , double y) { return 3; };
+//
+//auto test_fun = [](double x, double y) { return pow(x, 6) + pow(y, 6); };
+//auto test_fun_d = [](double x, double y) { return 30 * pow(x, 4) + 30 * pow(y, 4); };
+//
+//auto test_fun = [](double x, double y) { return sin(x) + sin(y); };
+//auto test_fun_d = [](double x, double y) { return -sin(x) - sin(y); };
+//
+//auto test_fun = [](double x, double y) { return 1 / sin(x + y + 0.1); };
+//auto test_fun_d = [](double x, double y) { return (1 + pow(cos(x + y + 0.1), 2)) / pow(sin(x + y + 0.1), 3); };
+//
+//auto test_fun = [](double x, double y) { return sqrt(x) + 2 * y; };
+//auto test_fun_d = [](double x, double y) { return -1 / (4 * x * sqrt(x)); };
