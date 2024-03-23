@@ -5,11 +5,16 @@ from scipy import stats
 
 
 def convert_int(i):
-    return f'${i[0]:.3f}\pm {i[1]:.3f}$'
+    mid = (i[0] + i[1]) / 2
+    t = (i[1] - i[0]) / 2
+    if t >= 1e-3:
+        return f'${mid:.3f}\pm {t:.3f}$'
+    else:
+        return f'${mid:.3f}$'
 
 
 def get_data(j):
-    with open(f"results_init/exp_{j}.txt") as f:  # change
+    with open(f"results_threads/1_sin(x+y)_{j}.txt") as f:  # change
         n, runs = map(int, f.readline().split())
         x, y, ints, errs = [], [], [], []
         for i in range(n):
@@ -25,8 +30,8 @@ def get_data(j):
     return x, y, ints, errs
 
 
-num = 3  # change
-mp = {0: 'нули', 1: 'среднее значение', 2: 'случайные значения'}  # change
+num = 4  # change
+mp = {0: '1', 1: '2', 2: '4', 3: '6'}  # change
 all_data = [get_data(i) for i in range(num)]
 
 # graph
@@ -35,8 +40,8 @@ all_y = [all_data[i][1] for i in range(num)]
 
 plt.xlabel('Значение N')  # change
 plt.ylabel('Время, сек')  # change
-plt.title("Сравнение производительности при разных начальных"
-          "\nприближениях для функции exp(2x+2y), THREADS_NUM = 4")  # change
+plt.title("Сравнение производительности при разном количестве"
+          "\nпотоков для функции 1/sin(x+y+0.1)")  # change
 
 for i in range(num):
     plt.plot(all_x[i], all_y[i], linewidth=1, label=mp[i])
@@ -52,7 +57,7 @@ table.field_names = [''] + [str(n) for n in all_x[0]]
 for i in range(num):
     table.add_row([mp[i]] + [convert_int(inter) for inter in all_int[i]])
 
-f = open('results_init/table_exp.txt', 'w')  # change
+f = open('results_threads/table_1_sin(x+y).txt', 'w')  # change
 print(table, file=f)
 
 # check errs
