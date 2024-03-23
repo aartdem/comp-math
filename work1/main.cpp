@@ -140,13 +140,13 @@ private:
 };
 
 #define THREADS_NUM 4 // change number of threads
-#define RUNS 20
+#define RUNS 10
 
 void test_different_net_sizes() {
     omp_set_num_threads(THREADS_NUM);
-    FILE *fp = freopen("results_init/1_sin(x+y)_2.txt", "w", stdout); // change output file
-    auto test_fun = [](double x, double y) { return 1 / sin(x + y + 0.1); };
-    auto test_fun_d = [](double x, double y) { return (1 + pow(cos(x + y + 0.1), 2)) / pow(sin(x + y + 0.1), 3); };
+    FILE *fp = freopen("results_init/sin_0.txt", "w", stdout); // change output file
+    auto test_fun = [](double x, double y) { return sin(x) + sin(y); };
+    auto test_fun_d = [](double x, double y) { return -sin(x) - sin(y); };
     std::vector<int> test_net_sizes{50, 80, 100, 200, 300, 400, 500, 600, 800, 1000};
 //    for (int i = 1500; i <= 2000; i += 500) {
 //        test_net_sizes.push_back(i);
@@ -193,10 +193,6 @@ int main() {
 
 // functions
 //
-//auto test_fun = [](double x, double y) {
-//    return 0.5 * x * x + y * y - y - 0.5 * x * y + 0.25;
-//};
-//auto test_fun_d = [](double x , double y) { return 3; };
 //
 //auto test_fun = [](double x, double y) { return pow(x, 6) + pow(y, 6); };
 //auto test_fun_d = [](double x, double y) { return 30 * pow(x, 4) + 30 * pow(y, 4); };
@@ -209,3 +205,6 @@ int main() {
 //
 //auto test_fun = [](double x, double y) { return exp(2 * x + 2 * y); };
 //auto test_fun_d = [](double x, double y) { return 8 * exp(2 * x + 2 * y); };
+
+//auto test_fun = [](double x, double y) { return sqrt(x) + 2 * y; };
+//auto test_fun_d = [](double x, double y) { return -1 / (4 * x * sqrt(x)); };

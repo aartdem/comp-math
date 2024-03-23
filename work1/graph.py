@@ -14,7 +14,7 @@ def convert_int(i):
 
 
 def get_data(j):
-    with open(f"results_threads/1_sin(x+y)_{j}.txt") as f:  # change
+    with open(f"results_init/results_sin_{j}.txt") as f:  # change
         n, runs = map(int, f.readline().split())
         x, y, ints, errs = [], [], [], []
         for i in range(n):
@@ -30,18 +30,18 @@ def get_data(j):
     return x, y, ints, errs
 
 
-num = 4  # change
-mp = {0: '1', 1: '2', 2: '4', 3: '6'}  # change
+num = 3  # change
+mp = {0: 'нули', 1: 'среднее значение', 2: 'случайные значения'}  # change
 all_data = [get_data(i) for i in range(num)]
 
 # graph
 all_x = [all_data[i][0] for i in range(num)]
 all_y = [all_data[i][1] for i in range(num)]
 
-plt.xlabel('Значение N')  # change
+plt.xlabel('Размер сетки')  # change
 plt.ylabel('Время, сек')  # change
-plt.title("Сравнение производительности при разном количестве"
-          "\nпотоков для функции 1/sin(x+y+0.1)")  # change
+plt.title("Сравнение производительности при разных размерах"
+          "\nсетки для функции sin(x)+sin(y)")  # change
 
 for i in range(num):
     plt.plot(all_x[i], all_y[i], linewidth=1, label=mp[i])
@@ -57,7 +57,7 @@ table.field_names = [''] + [str(n) for n in all_x[0]]
 for i in range(num):
     table.add_row([mp[i]] + [convert_int(inter) for inter in all_int[i]])
 
-f = open('results_threads/table_1_sin(x+y).txt', 'w')  # change
+f = open('results_init/table_sin.txt', 'w')  # change
 print(table, file=f)
 
 # check errs
