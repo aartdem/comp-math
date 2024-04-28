@@ -156,21 +156,15 @@ if __name__ == '__main__':
     temp_output = f'{Path(args.path).stem}_compressed.cbmp'
 
     # Main steps
-    if args.method == 'numpy':
-        sum_time = 0
-        for _ in range(20):
-            start_time = time.time()
+    start_time = time.time()
+    match args.method:
+        case 'numpy':
             compress_bmp(args.path, temp_output, args.ratio, Method.NUMPY)
-            sum_time += (time.time() - start_time)
-        print(f'Average numpy working time: {round(sum_time / 20, 2)} seconds.')
-    else:
-        start_time = time.time()
-        match args.method:
-            case 'power_simple':
-                compress_bmp(args.path, temp_output, args.ratio, Method.POWER_SIMPLE)
-            case 'block_power':
-                compress_bmp(args.path, temp_output, args.ratio, Method.BLOCK_POWER)
-        print(f'Working time: {round(time.time() - start_time, 2)} seconds.')
+        case 'power_simple':
+            compress_bmp(args.path, temp_output, args.ratio, Method.POWER_SIMPLE)
+        case 'block_power':
+            compress_bmp(args.path, temp_output, args.ratio, Method.BLOCK_POWER)
+    print(f'Working time: {round(time.time() - start_time, 2)} seconds.')
 
     restore_image(temp_output, path_to_result_image)
     if not args.save:
