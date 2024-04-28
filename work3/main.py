@@ -11,7 +11,6 @@ from PIL import Image
 
 MY_FORMAT_HEADER = b'CBMP'
 MY_FORMAT_HEADER_SIZE = 16
-EPS = 1e-10
 
 
 class Method(Enum):
@@ -36,9 +35,9 @@ def compress_bmp(input_file: str, output_file: str, ratio: float, method: Method
             case Method.NUMPY:
                 compressed_channel = compress_channel_numpy(channel, k)
             case Method.POWER_SIMPLE:
-                compressed_channel = compress_channel_power_simple(channel, k, 60000)
+                compressed_channel = compress_channel_power_simple(channel, k, 50000, 1e-8)
             case Method.BLOCK_POWER:
-                compressed_channel = compress_channel_block_power(channel, k, 60000)
+                compressed_channel = compress_channel_block_power(channel, k, 1000, 1e-8)
 
         compressed_image_data += compressed_channel
 
@@ -61,7 +60,7 @@ def compress_channel_numpy(channel: np.ndarray, k: int) -> bytes:
 
 
 # Simple power method
-def compress_channel_power_simple(a: np.ndarray, k: int, duration: int) -> bytes:
+def compress_channel_power_simple(a: np.ndarray, k: int, duration: int, eps: float) -> bytes:
     np.random.seed(0)
     n, m = a.shape
     v = np.random.rand(m)
@@ -72,12 +71,13 @@ def compress_channel_power_simple(a: np.ndarray, k: int, duration: int) -> bytes
 
     time_bound = time.time() * 1000 + duration
     for i in range(k):
-        print(i)
         ata = np.dot(a.T, a)
+        counter = 0
         while time.time() * 1000 < time_bound:
             v_new = np.dot(ata, v)
             v_new /= np.linalg.norm(v_new)
-            if np.allclose(v_new, v, EPS):
+            counter += 1
+            if counter % 10 == 0 and np.allclose(v_new, v, eps):
                 break
             v = v_new
 
@@ -86,6 +86,8 @@ def compress_channel_power_simple(a: np.ndarray, k: int, duration: int) -> bytes
         u[:, i] = np.dot(a, v) / eigenvalue
         sigma[i] = eigenvalue
 
+        if counter == 0:
+            break
         a = a - eigenvalue * np.outer(u[:, i], v)
 
     data = np.concatenate((u.ravel(), sigma, vt.ravel()))
@@ -93,7 +95,7 @@ def compress_channel_power_simple(a: np.ndarray, k: int, duration: int) -> bytes
 
 
 # Block power method taken from [https://sciendo.com/article/10.1515/auom-2015-0024?content-tab=abstract]
-def compress_channel_block_power(a: np.ndarray, k: int, duration: int) -> bytes:
+def compress_channel_block_power(a: np.ndarray, k: int, duration: int, eps: float) -> bytes:
     np.random.seed(0)
     n, m = a.shape
     u = np.zeros((n, k))
@@ -109,8 +111,7 @@ def compress_channel_block_power(a: np.ndarray, k: int, duration: int) -> bytes:
         v = q[:, :k]
         sigma = np.diag(r[:k, :k])
         counter += 1
-        print(counter)
-        if counter % 5 == 0 and np.allclose(np.dot(a, v), np.dot(u, r[:k, :k]), EPS):
+        if counter % 10 == 0 and np.allclose(np.dot(a, v), np.dot(u, r[:k, :k]), eps):
             break
 
     data = np.concatenate((u.ravel(), sigma, v.T.ravel()))
@@ -141,10 +142,6 @@ def restore_image(input_file, result_image_name) -> None:
         result_image.save(result_image_name)
 
 
-path_to_result_image = 'result.bmp'
-# path_to_image = 'src-images/XING_B24.BMP'
-path_to_image = 'src-images/nature.bmp'
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--path', type=str, required=True, help='Path to image')
@@ -152,20 +149,29 @@ if __name__ == '__main__':
                         help='The ratio of the size of the source file and the intermediate representation')
     parser.add_argument('-m', '--method', type=str, required=True, choices=['numpy', 'power_simple', 'block_power'],
                         help='The method used to calculate SVD')
-    parser.add_argument('-s', '--save', action='store_true',help='Enable saving an intermediate representation')
+    parser.add_argument('-s', '--save', action='store_true', help='Enable saving an intermediate representation')
 
     args = parser.parse_args()
-    path_to_result_image = f'{Path(args.path).stem}-{args.method}.bmp'
-    temp_output = f'{Path(args.path).stem}-compressed.cbmp'
+    path_to_result_image = f'{Path(args.path).stem}_{args.method}.bmp'
+    temp_output = f'{Path(args.path).stem}_compressed.cbmp'
 
     # Main steps
-    match args.method:
-        case 'numpy':
-            compress_bmp(path_to_image, temp_output, args.ratio, Method.NUMPY)
-        case 'power_simple':
-            compress_bmp(path_to_image, temp_output, args.ratio, Method.POWER_SIMPLE)
-        case 'block_power':
-            compress_bmp(path_to_image, temp_output, args.ratio, Method.BLOCK_POWER)
+    if args.method == 'numpy':
+        sum_time = 0
+        for _ in range(20):
+            start_time = time.time()
+            compress_bmp(args.path, temp_output, args.ratio, Method.NUMPY)
+            sum_time += (time.time() - start_time)
+        print(f'Average numpy working time: {round(sum_time / 20, 2)} seconds.')
+    else:
+        start_time = time.time()
+        match args.method:
+            case 'power_simple':
+                compress_bmp(args.path, temp_output, args.ratio, Method.POWER_SIMPLE)
+            case 'block_power':
+                compress_bmp(args.path, temp_output, args.ratio, Method.BLOCK_POWER)
+        print(f'Working time: {round(time.time() - start_time, 2)} seconds.')
+
     restore_image(temp_output, path_to_result_image)
     if not args.save:
         os.remove(temp_output)
