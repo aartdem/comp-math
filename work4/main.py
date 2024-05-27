@@ -119,9 +119,9 @@ def check_error(xs: np.array, y: np.array) -> float:
     e = np.sqrt(np.sum((real_f - approx_f) ** 2))
 
     # check constraint
-    J_m = 0.5
-    c = lambda1 * R / 4 + 1
-    c1 = np.sqrt(1 + np.pi ** 2 / 4) * J_m
+    J_m = 0.1
+    c = lambda1 * l ** 2 / 4 + 1
+    c1 = np.sqrt(1 + lambda1 * l ** 2 / 4) * J_m
     if e > (c * c1) ** 2 * norm_f * h2:
         print("The error score is not respected")
     return e
@@ -131,11 +131,10 @@ if __name__ == '__main__':
     grid_sizes = np.array([10, 20, 30])  # count of knots, 3 cases
     right_borders = np.array([np.pi, 2 * np.pi])  # right segment border, 2 cases
 
-    L = 0
     for N in grid_sizes:
-        for R in right_borders:
-            lambda1 = (np.pi / R) ** 2  # \lambda = (PI * n / R)^2, n = 1
-            grid = np.linspace(L, R, N)
+        for l in right_borders:
+            lambda1 = (np.pi / l) ** 2  # \lambda = (PI * n / l)^2, n = 1
+            grid = np.linspace(0, l, N)
 
             matr = calculate_matrix(grid)
             vec = calculate_vector(grid)
@@ -143,4 +142,4 @@ if __name__ == '__main__':
 
             err = check_error(grid, y_result)
 
-            print(f"N = {N} | R = {R} | err = {err}")
+            print(f"N = {N} | l = {l} | err = {err}")
