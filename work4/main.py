@@ -8,16 +8,17 @@ def f(x: float) -> float:
     return 2 * lambda1 * np.sin(np.sqrt(lambda1) * x)
 
 
-def equation_solution(x: float) -> float:
-    return np.sin(np.sqrt(lambda1) * x)
-
-
 def p(_: float) -> float:
     return 1
 
 
 def q(_: float) -> float:
     return lambda1
+
+
+# solution of the differential equation
+def equation_solution(x: float) -> float:
+    return np.sin(np.sqrt(lambda1) * x)
 
 
 # Calculates value of the j-th basic function in point x
@@ -92,7 +93,7 @@ def thomas(m: np.ndarray, d: np.array) -> np.array:
     return y
 
 
-# eval value of function, works only for uniform grid
+# eval value of function (only for uniform grid)
 def eval_f_approx(x: float, xs: np.array, y: np.array):
     n = xs.size
     h = xs[1] - xs[0]
@@ -103,22 +104,43 @@ def eval_f_approx(x: float, xs: np.array, y: np.array):
         return y[i] * phi_j(i, x, xs) + y[i + 1] * phi_j(i + 1, x, xs)
 
 
-def check_error(xs: np.array, y: np.array):
+def check_error(xs: np.array, y: np.array) -> float:
     n = xs.size
     new_n = n * 10
     new_xs = np.linspace(xs[0], xs[n - 1], new_n)
-    for x in new_xs:
-        print(equation_solution(x), eval_f_approx(x, xs, y))
+
+    norm_f = np.sqrt(quad(lambda x: f(x) ** 2, xs[0], xs[n - 1])[0])
+    h2 = (xs[1] - xs[0]) ** 2
+
+    real_f = np.array([equation_solution(cur_x) for cur_x in new_xs])
+    approx_f = np.array([eval_f_approx(cur_x, xs, y) for cur_x in new_xs])
+
+    # calculating error using L_2(0;l) norm
+    e = np.sqrt(np.sum((real_f - approx_f) ** 2))
+
+    # check constraint
+    J_m = 0.5
+    c = lambda1 * R / 4 + 1
+    c1 = np.sqrt(1 + np.pi ** 2 / 4) * J_m
+    if e > (c * c1) ** 2 * norm_f * h2:
+        print("The error score is not respected")
+    return e
 
 
 if __name__ == '__main__':
-    L = 0
-    R = np.pi
-    N = 10  # count of knots
-    lambda1 = 1
+    grid_sizes = np.array([10, 20, 30])  # count of knots, 3 cases
+    right_borders = np.array([np.pi, 2 * np.pi])  # right segment border, 2 cases
 
-    grid = np.linspace(L, R, N)
-    matr = calculate_matrix(grid)
-    vec = calculate_vector(grid)
-    y_result = thomas(matr, vec)
-    check_error(grid, y_result)
+    L = 0
+    for N in grid_sizes:
+        for R in right_borders:
+            lambda1 = (np.pi / R) ** 2  # \lambda = (PI * n / R)^2, n = 1
+            grid = np.linspace(L, R, N)
+
+            matr = calculate_matrix(grid)
+            vec = calculate_vector(grid)
+            y_result = thomas(matr, vec)
+
+            err = check_error(grid, y_result)
+
+            print(f"N = {N} | R = {R} | err = {err}")
